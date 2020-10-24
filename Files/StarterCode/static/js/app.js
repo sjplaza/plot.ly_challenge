@@ -1,64 +1,138 @@
 // Read the JSON file 
 d3.json("samples.json").then((importedData) => {
-    let names = importedData.names;
+    console.log(importedData);
+    let data = importedData;
+    console.log(data);
+    let names = data.names;
     names.forEach((name) => {
         d3.select("#selDataset").append("option").text(name);
     })
 });
 
 // set data to variables with a default id
-function init() {
-    defaultData = importedData.samples.filter(sample => sample.id === "940")[0];
-    defaultValues = defaultData.sample_values;
-    defaultID = defaultData.otu_ids;
-    defaultLabel = defaultData.otu_labels;
+function plotData() {
+    d3.json("samples.json").then((data) => {
+        console.log(data)
 
-    // display the top 10 OTUs for default ID
-    sampleValues = defaultValues.slice(0, 10).reverse();
-    otuIds = defaultID.slice(0, 10).reverse();
-    otuLabels = defaultLabel.slice(0, 10).reverse();
+        defaultData = data.samples.filter(sample => sample.id === "940")[0];
+        console.log(defaultData);
 
-    // create bar chart for default ID
-    let barTrace = {
-        x: sampleValues,
-        y: otuIds.map(outId => `OTU ${otuId}`),
-        text: otuLabels,
-        type: "bar",
-        orientation: "h"
-    };
+        defaultValues = defaultData.sample_values.slice(0, 10).reverse();
+        defaultIDs = defaultData.otu_ids.slice(0, 10).reverse();
+        defaultLabel = defaultData.otu_labels.slice(0, 10).reverse();
 
-    let barData = [barTrace];
+        console.log(defaultValues);
+        console.log(defaultIDs);
+        console.log(defaultLabel);
 
-    let barLayout = {
-        title: "Top 10 OTUs",
-        xaxis: { title: "Sample Values" },
-        yaxis: { title: "OTU Id" },
-    };
+        // create bar chart
+        let barTrace = {
+            x: defaultValues,
+            y: defaultIDs.map(defaultIDs => `OTU ${defaultIDs}`),
+            text: defaultLabel,
+            type: "bar",
+            orientation: "h"
+        };
 
-    Plotly.newPlot("bar", barData, barLayout);
-}
+        let barData = [barTrace];
 
-init();
+        let barLayout = {
+            title: "Top 10 OTUs",
+            yaxis: {
+                tickmode: "linear"
+            },
+            margin: {
+                l: 100,
+                r: 100,
+                t: 100,
+                b: 30
+            }
+        };
+
+        Plotly.newPlot("bar", barData, barLayout);
+
+        // create bubble chart
+        let bubbleTrace = {
+            x: defaultIDs,
+            y: defaultValues,
+            text: defaultLabel,
+            mode: "markers",
+            marker: {
+                color: defaultIDs,
+                size: defaultValues
+            }
+        };
+
+        let bubbleData = [bubbleTrace];
+
+        let bubbleLayout = {
+            title: "Top 10 OTUs",
+            xaxis: { title: "OTU ID" },
+            yaxis: { title: "Sample Values" },
+            showlegend: false,
+        };
+
+        Plotly.newPlot("bubble", bubbleData, bubbleLayout);
+    });
+
+    // show demographic info
+    d3.json("samples.json").then((data) => {
+        console.log(data);
+
+        defaultDemo = data.metadata.filter(sample => sample.id === 940)[0];
+        console.log(defaultDemo);
+
+        Object.entries(defaultDemo).forEach(
+            ([key, value]) => d3.select("#sample-metadata").append("p").text(`${key}: ${value}`)
+        )
+    });
+};
 
 d3.select("#selDataset").on("change", updatePlotly);
 
 // Update plots when ID changes
 function updatePlotly() {
-    let inputElement = d3.select("#selDataset");
-    let inputValue = inputElement.property("value");
+    d3.json("samples.json").then((data) => {
+        console.log(data);
 
-    dataset = importedData.samples.filter(sample => sample.id === inputValue)[0];
+        let inputElement = d3.select("#selDataset");
+        let inputValue = inputElement.property("value");
 
-    allValues = dataset.sample_values;
-    allIds = dataset.otu_ids;
-    allLabels = dataset.otu_labels;
+        console.log(inputValue);
 
-    top10Values = allValues.slice(0, 10).reverse();
-    top10Ids = allIds.slice(0, 10).reverse();
-    top10Labels = allLabels.slice(0, 10).reverse();
+        dataset = data.samples.filter(sample => sample.id === inputValue)[0];
+        console.log(dataset);
 
-    Plotly.restyle("bar", "x", [top10Values]);
-    Plotly.restyle("bar", "y", [top10Ids.map(outId => `OTU ${otuId}`)]);
-    Plotly.restyle("bar", "text", [top10Labels]);
+        allValues = dataset.sample_values;
+        allIds = dataset.otu_ids;
+        allLabels = dataset.otu_labels;
 
-}
+        top10Values = allValues.slice(0, 10).reverse();
+        top10Ids = allIds.slice(0, 10).reverse();
+        top10Labels = allLabels.slice(0, 10).reverse();
+
+        Plotly.restyle("bar", "x", [top10Values]);
+        Plotly.restyle("bar", "y", [top10Ids.map(defaultIDs => `OTU ${defaultIDs}`)]);
+        Plotly.restyle("bar", "text", [top10Labels]);
+    })
+};
+
+function init() {
+    let inputSelection = d3.select("#selDataset");
+
+    d3.json("samples.json").then((data) => {
+        inputSelection.append("option").text("sample").property("value")
+    });
+
+    let initialSample = inputSelection;
+    plotData(initialSample);
+    updatePlotly(initialSample);
+};
+
+init();
+
+function optionChanged(newSample) {
+    plotData(newSample);
+    updatePlotly(newSample);
+};
+
